@@ -21,29 +21,21 @@ workflows:
           echo "Found file: $ZIP_FILE. Extracting now..."
           unzip "$ZIP_FILE"
           rm "$ZIP_FILE"
-      - name: Auto-Locate and Strip Scoped Registry Rules
+      - name: Inject Global Bypass Profiles
         script: |
           #!/bin/bash
-          echo "Hunting for project configuration file paths..."
-          PROJECT_PATH=$(find . -name "*.xcodeproj" -print -quit)
+          echo "Creating dummy offline registry rules..."
+          # Force set the 'median' scope configuration to pull directly from the standard public npm registry mirror
+          echo "@median:registry=https://npmjs.org" > ~/.npmrc
+          echo '{"@median:registry": "https://npmjs.org"}' > ~/.yarnrc
           
-          if [ -z "$PROJECT_PATH" ]; then
-            echo "❌ ERROR: Still no Xcode project folder found!"
-            exit 1
-          fi
+          echo "Wiping internal lock files..."
+          find . -name "Package.resolved" -exec rm -f {} + 2>/dev/null || true
+          find . -name "pnpm-lock.yaml" -exec rm -f {} + 2>/dev/null || true
+          find . -name "package-lock.json" -exec rm -f {} + 2>/dev/null || true
+          find . -name "yarn.lock" -exec rm -f {} + 2>/dev/null || true
           
-          PROJECT_DIR=$(dirname "$PROJECT_PATH")
-          cd "$PROJECT_DIR"
-          
-          echo "Scanning for registry tracking manifests..."
-          # Look for any configuration maps setting up a custom package registry signature block and erase it
-          find . -name "project.pbxproj" -exec sed -i '' '/registry.*median/d' {} +
-          find . -name "Package.resolved" -exec sed -i '' '/median/d' {} + 2>/dev/null || true
-          
-          echo "Wiping any hidden package registration plist rules..."
-          find . -name "*.plist" -exec sed -i '' '/median/d' {} + 2>/dev/null || true
-          
-          echo "Registry sweep complete!"
+          echo "Environment layout bypass active!"
       - name: Compile App Binary
         script: |
           #!/bin/bash
@@ -51,7 +43,7 @@ workflows:
           PROJECT_DIR=$(dirname "$PROJECT_PATH")
           cd "$PROJECT_DIR"
           
-          echo "Compiling clean native app files..."
+          echo "Compiling native app files..."
           xcodebuild -project *.xcodeproj \
                      -scheme SniffBot \
                      -configuration Debug \
