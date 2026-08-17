@@ -6,14 +6,21 @@ workflows:
     environment:
       xcode: latest
       cocoapods: default
-    scripts:
+  scripts:
       - name: Unzip Project Files
         script: |
           #!/bin/bash
-          echo "Unzipping uploaded project files..."
-          unzip project.zip
-          rm project.zip
-      - name: Auto-Locate and Build App Binary
+          echo "Looking for your uploaded ZIP file..."
+          ZIP_FILE=$(find . -name "*.zip" -print -quit)
+          
+          if [ -z "$ZIP_FILE" ]; then
+            echo "❌ ERROR: No zip file found in the repository root!"
+            exit 1
+          fi
+          
+          echo "Found file: $ZIP_FILE. Extracting now..."
+          unzip "$ZIP_FILE"
+          rm "$ZIP_FILE"
         script: |
           #!/bin/bash
           echo "Hunting for project file paths..."
