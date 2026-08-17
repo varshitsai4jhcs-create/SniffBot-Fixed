@@ -21,21 +21,28 @@ workflows:
           echo "Found file: $ZIP_FILE. Extracting now..."
           unzip "$ZIP_FILE"
           rm "$ZIP_FILE"
-      - name: Inject Global Bypass Profiles
+      - name: Force Strip Internal Package Registry Configuration
         script: |
           #!/bin/bash
-          echo "Creating dummy offline registry rules..."
-          # Force set the 'median' scope configuration to pull directly from the standard public npm registry mirror
-          echo "@median:registry=https://npmjs.org" > ~/.npmrc
-          echo '{"@median:registry": "https://npmjs.org"}' > ~/.yarnrc
+          echo "Hunting for internal project configuration mapping structures..."
+          PBXPROJ_FILE=$(find . -name "project.pbxproj" -print -quit)
           
-          echo "Wiping internal lock files..."
+          if [ -z "$PBXPROJ_FILE" ]; then
+            echo "❌ ERROR: project.pbxproj file not found!"
+            exit 1
+          fi
+          
+          echo "Found configuration file at: $PBXPROJ_FILE"
+          
+          echo "Scrubbing internal SPM registry scopes..."
+          # This command strips any line containing 'registry' or 'median' inside your core Xcode blueprint
+          sed -i.bak '/median/d' "$PBXPROJ_FILE"
+          sed -i.bak '/registryConfig/d' "$PBXPROJ_FILE"
+          
+          echo "Forcing a clean slate on resolved packages..."
           find . -name "Package.resolved" -exec rm -f {} + 2>/dev/null || true
-          find . -name "pnpm-lock.yaml" -exec rm -f {} + 2>/dev/null || true
-          find . -name "package-lock.json" -exec rm -f {} + 2>/dev/null || true
-          find . -name "yarn.lock" -exec rm -f {} + 2>/dev/null || true
           
-          echo "Environment layout bypass active!"
+          echo "Configuration scrub complete!"
       - name: Compile App Binary
         script: |
           #!/bin/bash
