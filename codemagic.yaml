@@ -42,6 +42,8 @@ workflows:
                      -configuration Debug \
                      -sdk iphoneos \
                      -derivedDataPath build_output \
+                     -scmProvider system \
+                     -disableAutomaticPackageResolution \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
                      COMPILER_INDEX_STORE_ENABLE=NO \
