@@ -42,7 +42,8 @@ workflows:
                      -configuration Debug \
                      -sdk iphoneos \
                      -derivedDataPath build_output \
-                     -clonedSourcePackagesDirPathAppExtension build_packages \
+                     -onlyUsePackageVersionsFromResolvedFile \
+                     -skipPackageUpdates \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
                      COMPILER_INDEX_STORE_ENABLE=NO \
@@ -71,4 +72,4 @@ workflows:
           echo "Zipping app into final IPA archive..."
           zip -r ../../SniffBot.ipa Payload
     artifacts:
-      - "*.ipa"
+      - "*.ipa
