@@ -1,0 +1,64 @@
+workflows:
+  ios-debug-build:
+    name: iOS Debug IPA Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Unzip Project Files
+        script: |
+          #!/bin/bash
+          echo "Unzipping uploaded project files..."
+          unzip project.zip
+          rm project.zip
+      - name: Auto-Locate and Build App Binary
+        script: |
+          #!/bin/bash
+          echo "Hunting for project file paths..."
+          PROJECT_PATH=$(find . -name "*.xcodeproj" -print -quit)
+          
+          if [ -z "$PROJECT_PATH" ]; then
+            echo "❌ ERROR: Still no Xcode project folder found! Ensure the .xcodeproj folder was inside your zip file."
+            exit 1
+          fi
+          
+          echo "Found project at: $PROJECT_PATH"
+          PROJECT_DIR=$(dirname "$PROJECT_PATH")
+          cd "$PROJECT_DIR"
+          
+          echo "Compiling native app files..."
+          xcodebuild -project *.xcodeproj \
+                     -scheme SniffBot \
+                     -configuration Debug \
+                     -sdk iphoneos \
+                     -derivedDataPath build_output \
+                     CODE_SIGNING_ALLOWED=NO \
+                     CODE_SIGNING_REQUIRED=NO \
+                     clean build
+      - name: Package App Into IPA Archive
+        script: |
+          #!/bin/bash
+          PROJECT_PATH=$(find . -name "*.xcodeproj" -print -quit)
+          PROJECT_DIR=$(dirname "$PROJECT_PATH")
+          cd "$PROJECT_DIR"
+          
+          echo "Creating Payload structure..."
+          mkdir -p Payload
+          
+          echo "Locating compiled app bundle..."
+          APP_BUNDLE=$(find build_output -name "SniffBot.app" -type d -print -quit)
+          
+          if [ -z "$APP_BUNDLE" ]; then
+            echo "❌ ERROR: Compilation finished but the app bundle was not built!"
+            exit 1
+          fi
+          
+          echo "Copying $APP_BUNDLE to payload folder..."
+          cp -R "$APP_BUNDLE" Payload/
+          
+          echo "Zipping app into final IPA archive..."
+          zip -r ../../SniffBot.ipa Payload
+    artifacts:
+      - "*.ipa"
