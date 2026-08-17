@@ -6,7 +6,7 @@ workflows:
     environment:
       xcode: latest
       cocoapods: default
-  scripts:
+    scripts:
       - name: Unzip Project Files
         script: |
           #!/bin/bash
@@ -21,13 +21,14 @@ workflows:
           echo "Found file: $ZIP_FILE. Extracting now..."
           unzip "$ZIP_FILE"
           rm "$ZIP_FILE"
+      - name: Auto-Locate and Build App Binary
         script: |
           #!/bin/bash
           echo "Hunting for project file paths..."
           PROJECT_PATH=$(find . -name "*.xcodeproj" -print -quit)
           
           if [ -z "$PROJECT_PATH" ]; then
-            echo "❌ ERROR: Still no Xcode project folder found! Ensure the .xcodeproj folder was inside your zip file."
+            echo "❌ ERROR: Still no Xcode project folder found!"
             exit 1
           fi
           
@@ -68,4 +69,4 @@ workflows:
           echo "Zipping app into final IPA archive..."
           zip -r ../../SniffBot.ipa Payload
     artifacts:
-      - "*.ipa"
+       - "*.ipa"
