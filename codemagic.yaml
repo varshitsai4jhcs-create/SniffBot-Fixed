@@ -36,14 +36,15 @@ workflows:
           PROJECT_DIR=$(dirname "$PROJECT_PATH")
           cd "$PROJECT_DIR"
           
+          echo "Generating missing dependency checklist file..."
+          xcodebuild -project *.xcodeproj -scheme SniffBot -resolvePackageDependencies
+          
           echo "Compiling native app files..."
           xcodebuild -project *.xcodeproj \
                      -scheme SniffBot \
                      -configuration Debug \
                      -sdk iphoneos \
                      -derivedDataPath build_output \
-                     -onlyUsePackageVersionsFromResolvedFile \
-                     -skipPackageUpdates \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
                      COMPILER_INDEX_STORE_ENABLE=NO \
