@@ -42,8 +42,10 @@ workflows:
                      -configuration Debug \
                      -sdk iphoneos \
                      -derivedDataPath build_output \
+                     -clonedSourcePackagesDirPathAppExtension build_packages \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
+                     COMPILER_INDEX_STORE_ENABLE=NO \
                      clean build
       - name: Package App Into IPA Archive
         script: |
@@ -69,4 +71,4 @@ workflows:
           echo "Zipping app into final IPA archive..."
           zip -r ../../SniffBot.ipa Payload
     artifacts:
-       - "*.ipa"
+      - "*.ipa"
