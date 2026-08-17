@@ -21,10 +21,10 @@ workflows:
           echo "Found file: $ZIP_FILE. Extracting now..."
           unzip "$ZIP_FILE"
           rm "$ZIP_FILE"
-      - name: Auto-Locate and Build App Binary
+      - name: Auto-Locate and Strip Scoped Registry Rules
         script: |
           #!/bin/bash
-          echo "Hunting for project file paths..."
+          echo "Hunting for project configuration file paths..."
           PROJECT_PATH=$(find . -name "*.xcodeproj" -print -quit)
           
           if [ -z "$PROJECT_PATH" ]; then
@@ -32,14 +32,26 @@ workflows:
             exit 1
           fi
           
-          echo "Found project at: $PROJECT_PATH"
           PROJECT_DIR=$(dirname "$PROJECT_PATH")
           cd "$PROJECT_DIR"
           
-          echo "Downloading project package dependencies..."
-          xcodebuild -project *.xcodeproj -scheme SniffBot -resolvePackageDependencies
+          echo "Scanning for registry tracking manifests..."
+          # Look for any configuration maps setting up a custom package registry signature block and erase it
+          find . -name "project.pbxproj" -exec sed -i '' '/registry.*median/d' {} +
+          find . -name "Package.resolved" -exec sed -i '' '/median/d' {} + 2>/dev/null || true
           
-          echo "Compiling native app files..."
+          echo "Wiping any hidden package registration plist rules..."
+          find . -name "*.plist" -exec sed -i '' '/median/d' {} + 2>/dev/null || true
+          
+          echo "Registry sweep complete!"
+      - name: Compile App Binary
+        script: |
+          #!/bin/bash
+          PROJECT_PATH=$(find . -name "*.xcodeproj" -print -quit)
+          PROJECT_DIR=$(dirname "$PROJECT_PATH")
+          cd "$PROJECT_DIR"
+          
+          echo "Compiling clean native app files..."
           xcodebuild -project *.xcodeproj \
                      -scheme SniffBot \
                      -configuration Debug \
