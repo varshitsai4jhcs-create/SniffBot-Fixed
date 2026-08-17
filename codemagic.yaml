@@ -21,37 +21,23 @@ workflows:
           echo "Found file: $ZIP_FILE. Extracting now..."
           unzip "$ZIP_FILE"
           rm "$ZIP_FILE"
-      - name: Force Strip Internal Package Registry Configuration
+      - name: Compile Native Workspace Files
         script: |
           #!/bin/bash
-          echo "Hunting for internal project configuration mapping structures..."
-          PBXPROJ_FILE=$(find . -name "project.pbxproj" -print -quit)
+          echo "Hunting for workspace structure path..."
+          WORKSPACE_PATH=$(find . -name "*.xcworkspace" -print -quit)
           
-          if [ -z "$PBXPROJ_FILE" ]; then
-            echo "❌ ERROR: project.pbxproj file not found!"
+          if [ -z "$WORKSPACE_PATH" ]; then
+            echo "❌ ERROR: No .xcworkspace file found!"
             exit 1
           fi
           
-          echo "Found configuration file at: $PBXPROJ_FILE"
+          echo "Found workspace layout configuration at: $WORKSPACE_PATH"
+          WORKSPACE_DIR=$(dirname "$WORKSPACE_PATH")
+          cd "$WORKSPACE_DIR"
           
-          echo "Scrubbing internal SPM registry scopes..."
-          # This command strips any line containing 'registry' or 'median' inside your core Xcode blueprint
-          sed -i.bak '/median/d' "$PBXPROJ_FILE"
-          sed -i.bak '/registryConfig/d' "$PBXPROJ_FILE"
-          
-          echo "Forcing a clean slate on resolved packages..."
-          find . -name "Package.resolved" -exec rm -f {} + 2>/dev/null || true
-          
-          echo "Configuration scrub complete!"
-      - name: Compile App Binary
-        script: |
-          #!/bin/bash
-          PROJECT_PATH=$(find . -name "*.xcodeproj" -print -quit)
-          PROJECT_DIR=$(dirname "$PROJECT_PATH")
-          cd "$PROJECT_DIR"
-          
-          echo "Compiling native app files..."
-          xcodebuild -project *.xcodeproj \
+          echo "Compiling native workspace core..."
+          xcodebuild -workspace *.xcworkspace \
                      -scheme SniffBot \
                      -configuration Debug \
                      -sdk iphoneos \
@@ -63,9 +49,9 @@ workflows:
       - name: Package App Into IPA Archive
         script: |
           #!/bin/bash
-          PROJECT_PATH=$(find . -name "*.xcodeproj" -print -quit)
-          PROJECT_DIR=$(dirname "$PROJECT_PATH")
-          cd "$PROJECT_DIR"
+          WORKSPACE_PATH=$(find . -name "*.xcworkspace" -print -quit)
+          WORKSPACE_DIR=$(dirname "$WORKSPACE_PATH")
+          cd "$WORKSPACE_DIR"
           
           echo "Creating Payload structure..."
           mkdir -p Payload
