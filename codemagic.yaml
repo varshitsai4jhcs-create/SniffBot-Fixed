@@ -72,4 +72,4 @@ workflows:
           echo "Zipping app into final IPA archive..."
           zip -r ../../SniffBot.ipa Payload
     artifacts:
-      - *.ipa
+      - "*.ipa"
